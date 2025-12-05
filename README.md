@@ -1,2 +1,12 @@
-# fortis-chatbot
-Chatbot backend for Fortis Steel website
+# Fortis Chatbot
+
+Чат-бот для сайта https://fortis-steel.ru/  
+Работает как менеджер по продажам металлопроката, отвечает клиентам и отправляет интересные заявки на email.
+
+## 🚀 Технологии
+- Python 3.11
+- FastAPI
+- Replicate API (LLM)
+- Render.com (деплой backend)
+- JavaScript chat widget (frontend)
+
