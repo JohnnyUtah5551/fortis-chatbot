@@ -44,3 +44,14 @@ async def chat_endpoint(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "chatbot-api"}
+
+@app.get("/")
+async def root():
+    return {
+        "service": "Fortis Chatbot API", 
+        "status": "running",
+        "endpoints": {
+            "chat": "/chat (POST)",
+            "health": "/health (GET)"
+        }
+    }
