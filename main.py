@@ -41,3 +41,6 @@ async def chat_endpoint(request: Request):
 
     return {"reply": bot_reply}
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "chatbot-api"}
