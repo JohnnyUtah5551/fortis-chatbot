@@ -9,7 +9,7 @@ EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_TO = os.getenv("EMAIL_TO")  # кому отправлять заявки
+EMAIL_TO = os.getenv("fmd@fortis-steel.ru")  # кому отправлять заявки
 
 
 def send_application_email(text: str, amount: int):
