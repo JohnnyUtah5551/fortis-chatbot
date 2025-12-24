@@ -85,34 +85,55 @@ def generate_bot_reply(api_key: str, message: str) -> str:
 # --- ЛОГИКА ОПРЕДЕЛЕНИЯ "ИНТЕРЕСНОЙ ЗАЯВКИ" ---
 
 KEYWORDS = [
-    "купить", "заказать", "арматура", "труба", "лист", "швеллер",
-    "балка", "уголок", "металл", "металлопрокат", "стоимость", "цена"
+    "купить", "заказать", "арматура", "труба", "лист", "швеллер", "профнастил", "оцинкованный", "оцинковка", "профлист", "перфорированный",
+    "балка", "уголок", "металл", "металлопрокат", "стоимость", "цена", "штрипс", "рулон"
+    "опт", "оптовый", "крупный", "партия", "поставк",  # контекстные слова
+    "заявк", "оформ", "договор",  # признаки серьезности
 ]
 
 
 def check_interesting_application(text: str):
-    """
-    Возвращает:
-    (True/False, сумма)
-    """
-
     t = text.lower()
-
-    # Проверяем ключевые фразы
+    
+    # Существующая проверка ключевых слов
     if not any(k in t for k in KEYWORDS):
         return False, 0
-
-    # Ищем суммы
+    
+    # Улучшенный поиск сумм
     import re
-    numbers = re.findall(r"\d+", t)
-
-    if not numbers:
-        return False, 0
-
-    amounts = [int(n) for n in numbers if int(n) >= 50000]
-
-    if not amounts:
-        return False, 0
-
-    return True, max(amounts)
+    
+    # Шаблон 1: Явные суммы ("50000 руб", "100 тыс", "1.5 млн")
+    money_patterns = [
+        r'(\d+)\s*(?:тыс|т\.?р|тр|руб|р\.?)',  # 50 тыс руб
+        r'(\d+)\s*(?:млн|миллион)',            # 1 млн
+        r'(?:заказ|заявк[ау]|сумм[аой]|на\s+сумму)\s*[вна]?\s*(\d+)',  # заказ на 50000
+        r'(\d+)\s*(?:тонн|тн?)[^.]*руб',       # 3 тонны по 20000
+    ]
+    
+    for pattern in money_patterns:
+        matches = re.findall(pattern, t)
+        for match in matches:
+            num = int(match)
+            # Конвертируем тыс/млн
+            if 'тыс' in pattern or any(word in pattern for word in ['т.р', 'тр', 'труб']):
+                num *= 1000
+            elif 'млн' in pattern:
+                num *= 1000000
+            if num >= 50000:
+                return True, num
+    
+    # Шаблон 2: Количества и цены ("5 тонн по 15000")
+    quantity_price = re.search(r'(\d+)\s*(?:тонн|тн?|шт)[^.]*по\s*(\d+)', t)
+    if quantity_price:
+        quantity = int(quantity_price.group(1))
+        price = int(quantity_price.group(2))
+        total = quantity * price
+        if total >= 50000:
+            return True, total
+    
+    # Шаблон 3: Просто большие числа (резервный вариант)
+    numbers = [int(n) for n in re.findall(r'\b\d{5,}\b', t)]  # только 5+ знаков
+    amounts = [n for n in numbers if n >= 50000]
+    
+    return (True, max(amounts)) if amounts else (False, 0)
 
