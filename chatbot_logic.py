@@ -60,7 +60,7 @@ SYSTEM_PROMPT = """
 Не предлагай скидки без подтверждения. Лучше: «По таким объёмам менеджер может предложить индивидуальные условия.»
 """
 
-REPLICATE_MODEL = "meta/meta-llama-3-8b-instruct"  # пример модели
+REPLICATE_MODEL = "openai/gpt-5"  # пример модели
 
 
 def generate_bot_reply(api_key: str, message: str) -> str:
