@@ -54,7 +54,8 @@
             chat.innerHTML += `<div><b>Вы:</b> ${message}</div>`;
             input.value = "";
 
-            const res = await fetch("/chat", {
+            const API_URL = "https://ТВОЙ-СЕРВИС.onrender.com/chat";
+            const res = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message })
