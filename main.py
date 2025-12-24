@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 from chatbot_logic import generate_bot_reply, check_interesting_application
 from email_utils import send_application_email
@@ -9,7 +10,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI()
-from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
