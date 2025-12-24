@@ -54,7 +54,7 @@
             chat.innerHTML += `<div><b>Вы:</b> ${message}</div>`;
             input.value = "";
 
-            const API_URL = "https://fortis-chatbot.onrender.com";
+            const API_URL = "https://fortis-chatbot.onrender.com/chat";
             const res = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
