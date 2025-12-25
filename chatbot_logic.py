@@ -1,4 +1,5 @@
 import requests
+import replicate  # <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ!
 
 SYSTEM_PROMPT = """
 Ты — опытный менеджер по продажам компании Фортис металл и дизайн, специализирующейся на оптовых и розничных поставках металлопроката. Ты вежливый, компетентный, ориентированный на клиента и умеешь вести деловой диалог. Твоя задача — помочь посетителю сайта подобрать нужный вид металлопроката, ответить на вопросы, предложить выгодные решения и, при наличии интересной заявки (от 50 000 рублей), корректно собрать контактные данные и отправить заявку на почту отдела продаж.
@@ -60,29 +61,48 @@ SYSTEM_PROMPT = """
 Не предлагай скидки без подтверждения. Лучше: «По таким объёмам менеджер может предложить индивидуальные условия.»
 """
 
+# Переменную REPLICATE_MODEL можно оставить для справки, но в новой функции она не используется напрямую
 REPLICATE_MODEL = "openai/gpt-5"  # пример модели
 
-
 def generate_bot_reply(api_key: str, message: str) -> str:
-    url = "https://api.replicate.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}"}
+    """Генерация ответа бота через Replicate API (используя библиотеку replicate)."""
+    try:
+        # Создаем клиент Replicate (как в Telegram-боте)
+        client = replicate.Client(api_token=api_key)
+        
+        # Запускаем модель GPT-5
+        # ВАЖНО: формат промпта может потребовать настройки под конкретную модель
+        output = client.run(
+            "openai/gpt-5",  # Используем название модели
+            input={
+                "prompt": f"{SYSTEM_PROMPT}\n\nПользователь: {message}\n\nМенеджер Аркадий:",
+                "max_tokens": 500,
+                "temperature": 0.7,
+                "top_p": 0.9
+            }
+        )
+        
+        # Обрабатываем результат
+        if output and isinstance(output, str):
+            return output.strip()
+        elif isinstance(output, list) and len(output) > 0:
+            # Если модель возвращает список, берем первый элемент
+            result = output[0]
+            return result.strip() if isinstance(result, str) else str(result)
+        elif output:
+            # Любой другой вывод преобразуем в строку
+            return str(output).strip()
+        else:
+            return "Извините, не получилось сгенерировать ответ. Попробуйте переформулировать вопрос."
+            
+    except replicate.exceptions.ModelError as e:
+        return f"Ошибка модели: {str(e)}"
+    except replicate.exceptions.ReplicateError as e:
+        return f"Ошибка Replicate API: {str(e)}"
+    except Exception as e:
+        return f"Неожиданная ошибка: {str(e)}"
 
-    payload = {
-        "model": REPLICATE_MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": message},
-        ]
-    }
-
-    r = requests.post(url, json=payload, headers=headers)
-    r.raise_for_status()
-    data = r.json()
-
-    return data["choices"][0]["message"]["content"]
-
-
-# --- ЛОГИКА ОПРЕДЕЛЕНИЯ "ИНТЕРЕСНОЙ ЗАЯВКИ" ---
+# --- ЛОГИКА ОПРЕДЕЛЕНИЯ "ИНТЕРЕСНОЙ ЗАЯВКИ" (оставляем без изменений) ---
 
 KEYWORDS = [
     "купить", "заказать", "арматура", "труба", "лист", "швеллер", "профнастил", "оцинкованный", "оцинковка", "профлист", "перфорированный",
@@ -90,7 +110,6 @@ KEYWORDS = [
     "опт", "оптовый", "крупный", "партия", "поставк",  # контекстные слова
     "заявк", "оформ", "договор",  # признаки серьезности
 ]
-
 
 def check_interesting_application(text: str):
     t = text.lower()
