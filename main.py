@@ -41,7 +41,7 @@ async def chat_endpoint(request: Request):
 
     return {"reply": bot_reply}
 
-@app.get("/health")
+@app.get("/health", methods=["GET", "HEAD"])  # <-- ИСПРАВЛЕННАЯ СТРОКА
 async def health_check():
     return {"status": "ok", "service": "chatbot-api"}
 
@@ -52,6 +52,6 @@ async def root():
         "status": "running",
         "endpoints": {
             "chat": "/chat (POST)",
-            "health": "/health (GET)"
+            "health": "/health (GET, HEAD)"  # <-- Можете обновить и здесь для ясности
         }
     }
