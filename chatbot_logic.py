@@ -65,42 +65,62 @@ SYSTEM_PROMPT = """
 REPLICATE_MODEL = "openai/gpt-5"  # пример модели
 
 def generate_bot_reply(api_key: str, message: str) -> str:
-    """Генерация ответа бота через Replicate API (используя библиотеку replicate)."""
+    """Генерация ответа бота через Replicate API."""
     try:
-        # Создаем клиент Replicate (как в Telegram-боте)
+        print(f"\n=== ДЕБАГ: Начинаем генерацию ===")
+        print(f"Сообщение: '{message}'")
+        
         client = replicate.Client(api_token=api_key)
         
-        # Запускаем модель GPT-5
-        # ВАЖНО: формат промпта может потребовать настройки под конкретную модель
-        output = client.run(
-            "openai/gpt-5",  # Используем название модели
+        # 1. Создаем ПРАВИЛЬНЫЙ промпт для GPT-5
+        full_prompt = f"""{SYSTEM_PROMPT}
+
+Теперь отвечай как менеджер Аркадий.
+
+Вопрос клиента: {message}
+
+Ответ Аркадия:"""
+        
+        print(f"Длина полного промпта: {len(full_prompt)} символов")
+        print(f"Первые 500 символов: {full_prompt[:500]}...")
+        
+        # 2. Отправляем запрос как в документации Replicate
+        # Важно: возможно нужен streaming как в примере
+        output = replicate.run(
+            "openai/gpt-5",
             input={
-                "prompt": f"{SYSTEM_PROMPT}\n\nПользователь: {message}\n\nМенеджер Аркадий:",
-                "max_tokens": 500,
-                "temperature": 0.7,
+                "prompt": full_prompt,
+                "max_tokens": 1000,
+                "temperature": 0.8,
                 "top_p": 0.9
             }
         )
         
-        # Обрабатываем результат
-        if output and isinstance(output, str):
-            return output.strip()
-        elif isinstance(output, list) and len(output) > 0:
-            # Если модель возвращает список, берем первый элемент
-            result = output[0]
-            return result.strip() if isinstance(result, str) else str(result)
-        elif output:
-            # Любой другой вывод преобразуем в строку
-            return str(output).strip()
+        print(f"Тип ответа: {type(output)}")
+        print(f"Ответ сырой: {output}")
+        
+        # 3. Обрабатываем ответ (GPT-5 может вернуть генератор)
+        result = ""
+        if hasattr(output, '__iter__') and not isinstance(output, str):
+            # Если это генератор/stream (как в документации)
+            for chunk in output:
+                if isinstance(chunk, str):
+                    result += chunk
+                else:
+                    result += str(chunk)
+        elif isinstance(output, str):
+            result = output
         else:
-            return "Извините, не получилось сгенерировать ответ. Попробуйте переформулировать вопрос."
+            result = str(output)
+        
+        print(f"Итоговый ответ: {result[:200]}...")
+        print(f"=== ДЕБАГ: Конец генерации ===\n")
+        
+        return result.strip() if result.strip() else "Извините, не получилось сгенерировать ответ."
             
-    except replicate.exceptions.ModelError as e:
-        return f"Ошибка модели: {str(e)}"
-    except replicate.exceptions.ReplicateError as e:
-        return f"Ошибка Replicate API: {str(e)}"
     except Exception as e:
-        return f"Неожиданная ошибка: {str(e)}"
+        print(f"ДЕБАГ: Ошибка: {str(e)}")
+        return f"Ошибка: {str(e)}"
 
 # --- ЛОГИКА ОПРЕДЕЛЕНИЯ "ИНТЕРЕСНОЙ ЗАЯВКИ" (оставляем без изменений) ---
 
