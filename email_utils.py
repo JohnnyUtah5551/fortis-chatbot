@@ -1,5 +1,6 @@
 import os
 import smtplib
+import socket  # <-- ДОБАВЛЕНО ДЛЯ ТЕСТА
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 
@@ -31,94 +32,91 @@ def send_application_email(text: str, amount: int):
         print(f"❌ Ошибка отправки email: {str(e)}")
         # НЕ поднимаем исключение дальше, чтобы бот продолжал работать
 
-import socket  # Добавьте этот импорт в начало файла
-
-def test_render_smtp_ports():
-    """Тестируем, какие SMTP порты доступны на бесплатном Render."""
+# ===================================================
+# ТЕСТ СЕТИ RENDER (удалите после получения результатов)
+# ===================================================
+def test_render_network_capabilities():
+    """Тестируем, какие сетевые возможности есть у Render."""
     print("\n" + "="*60)
-    print("🔍 ТЕСТИРУЕМ ДОСТУПНОСТЬ SMTP ПОРТОВ НА RENDER")
+    print("🔍 ТЕСТ СЕТЕВЫХ ВОЗМОЖНОСТЕЙ RENDER")
     print("="*60)
     
-    # Тестируем основные SMTP порты
+    # 1. Тест DNS (разрешение имен)
+    print("\n1. 🌐 DNS разрешение:")
+    try:
+        ip_address = socket.gethostbyname("smtp.yandex.ru")
+        print(f"   ✅ DNS работает: smtp.yandex.ru → {ip_address}")
+    except Exception as e:
+        print(f"   ❌ DNS не работает: {e}")
+    
+    # 2. Тест разных SMTP портов
+    print("\n2. 📡 Тест SMTP портов Яндекс:")
     ports_to_test = [
-        (587, "Yandex/Gmail стандартный (STARTTLS)"),
-        (465, "Yandex/Gmail SSL"),
-        (25, "SMTP станддартный"),
-        (2525, "Альтернативный (часто открыт)"),
-        (8025, "Тестовый порт"),
+        (465, "SSL (основной для Яндекс)"),
+        (587, "STARTTLS (альтернативный)"),
+        (25, "SMTP стандартный"),
     ]
     
     for port, description in ports_to_test:
         try:
-            # Пробуем подключиться к Яндекс SMTP
-            print(f"\n📡 Порт {port} ({description}):")
-            print(f"   Подключаемся к smtp.yandex.ru:{port}...")
-            
-            # Создаем сокет с таймаутом 5 секунд
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            
+            sock.settimeout(3)  # 3 секунды таймаут
             result = sock.connect_ex(("smtp.yandex.ru", port))
             
             if result == 0:
-                print(f"   ✅ ПОРТ ОТКРЫТ! Можно подключиться")
+                print(f"   Порт {port} ({description}): ✅ ОТКРЫТ")
+                sock.close()
                 
-                # Пробуем отправить EHLO команду
+                # Пробуем SMTP handshake
                 try:
                     if port == 465:
                         server = smtplib.SMTP_SSL("smtp.yandex.ru", port, timeout=5)
                     else:
                         server = smtplib.SMTP("smtp.yandex.ru", port, timeout=5)
+                        if port == 587:
+                            server.starttls()
                     
-                    server.ehlo()
-                    print(f"   ✅ SMTP сервер отвечает")
+                    response = server.ehlo()
+                    print(f"     SMTP handshake: ✅ УСПЕХ ({response[0]})")
                     server.quit()
-                    
-                    # Тест с авторизацией (если есть данные)
-                    if EMAIL_USER and EMAIL_PASSWORD:
-                        try:
-                            print(f"   Тестируем авторизацию...")
-                            if port == 465:
-                                server = smtplib.SMTP_SSL("smtp.yandex.ru", port, timeout=5)
-                            else:
-                                server = smtplib.SMTP("smtp.yandex.ru", port, timeout=5)
-                                if port == 587:
-                                    server.starttls()
-                            
-                            server.login(EMAIL_USER, EMAIL_PASSWORD)
-                            print(f"   ✅ АВТОРИЗАЦИЯ УСПЕШНА!")
-                            server.quit()
-                            return port  # Нашли рабочий порт!
-                            
-                        except Exception as auth_error:
-                            print(f"   ⚠️ Авторизация не удалась: {str(auth_error)[:50]}")
-                    
-                except Exception as smtp_error:
-                    print(f"   ⚠️ SMTP ошибка: {str(smtp_error)[:50]}")
+                except Exception as smtp_e:
+                    print(f"     SMTP handshake: ❌ {str(smtp_e)[:50]}")
                     
             else:
-                print(f"   ❌ ПОРТ ЗАБЛОКИРОВАН Render (код: {result})")
+                print(f"   Порт {port} ({description}): ❌ ЗАКРЫТ (ошибка {result})")
                 
-            sock.close()
-            
         except socket.timeout:
-            print(f"   ❌ ТАЙМАУТ - порт заблокирован")
+            print(f"   Порт {port} ({description}): ❌ ТАЙМАУТ (блокировка)")
         except Exception as e:
-            print(f"   ❌ Ошибка: {str(e)[:50]}")
+            print(f"   Порт {port} ({description}): ❌ {str(e)[:50]}")
+    
+    # 3. Тест HTTP(S) запросов (важно для альтернатив)
+    print("\n3. 🌍 Тест HTTP(S) запросов (для API email):")
+    try:
+        import requests
+        test_urls = [
+            ("https://httpbin.org/ip", "Публичный HTTP"),
+            ("https://api.resend.com", "Resend API"),
+            ("https://api.sendgrid.com", "SendGrid API"),
+        ]
+        
+        for url, name in test_urls:
+            try:
+                response = requests.get(url, timeout=10)
+                print(f"   {name}: ✅ Доступен (статус {response.status_code})")
+            except Exception as e:
+                print(f"   {name}: ❌ Недоступен ({str(e)[:30]})")
+                
+    except ImportError:
+        print("   Библиотека requests не установлена")
     
     print("\n" + "="*60)
-    print("📊 ВЫВОД: Если все порты заблокированы - нужен обходной путь")
+    print("📊 РЕЗУЛЬТАТ:")
     print("="*60)
-    return None
+    print("Если все SMTP порты закрыты, но HTTP работает - используйте")
+    print("email через API (Resend, SendGrid, Mailgun, etc.)")
+    print("="*60)
 
-# === ВРЕМЕННЫЙ ТЕСТ ===
-# Удалите эти строки после тестирования!
-if __name__ == "__main__":
-    print("🚀 Запускаем тест SMTP портов...")
-    working_port = test_render_smtp_ports()
-    if working_port:
-        print(f"\n🎉 Найден рабочий порт: {working_port}")
-        print(f"Исправьте EMAIL_PORT = {working_port} в настройках")
-    else:
-        print(f"\n⚠️ Все SMTP порты заблокированы Render")
-        print("Нужно использовать HTTP-based email сервис (Resend, SendGrid API)")
+# Запуск теста при импорте (временно!)
+print("🚀 Запускаю тест сетевых возможностей Render...")
+test_render_network_capabilities()
