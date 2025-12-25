@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response  # <-- Добавьте Response в импорт!
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -41,10 +41,16 @@ async def chat_endpoint(request: Request):
 
     return {"reply": bot_reply}
 
-# ВАЖНО! Убрать "methods=["GET", "HEAD"]" - FastAPI это не поддерживает!
+
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):  # <-- Добавьте параметр request!
+    """Эндпоинт для проверки здоровья, поддерживает GET и HEAD."""
+    if request.method == "HEAD":
+        # Для HEAD запроса возвращаем только заголовки (статус 200)
+        return Response(status_code=200)
+    # Для GET запроса возвращаем полный JSON-ответ
     return {"status": "ok", "service": "chatbot-api"}
+
 
 @app.get("/")
 async def root():
@@ -53,6 +59,6 @@ async def root():
         "status": "running",
         "endpoints": {
             "chat": "/chat (POST)",
-            "health": "/health (GET)"  # Можно оставить просто GET
+            "health": "/health (GET, HEAD)"  # <-- Обновите здесь тоже
         }
     }
