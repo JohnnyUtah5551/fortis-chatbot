@@ -87,7 +87,7 @@ def generate_bot_reply(api_key: str, message: str) -> str:
         # 2. Отправляем запрос как в документации Replicate
         # Важно: возможно нужен streaming как в примере
         output = replicate.run(
-            "openai/gpt-5",
+            "meta/meta-llama-3-70b-instruct",
             input={
                 "prompt": full_prompt,
                 "max_tokens": 1000,
