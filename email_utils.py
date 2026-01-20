@@ -8,7 +8,7 @@ load_dotenv()
 MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")  # Ваш Private API Key
 MAILGUN_DOMAIN = os.getenv("MAILGUN_DOMAIN", "sandboxXXXXXX.mailgun.org")  # Ваш домен Mailgun
 EMAIL_FROM = f"Fortis Chatbot <bot@{MAILGUN_DOMAIN}>"  # Отправитель
-EMAIL_TO = os.getenv("EMAIL_TO", "fmd@fortis-steel.ru")  # Получатель
+EMAIL_TO = os.getenv("EMAIL_TO", "229@fortis-steel.ru")  # Получатель
 
 def send_application_email(text: str, amount: int):
     """Отправка заявки через Mailgun API."""
