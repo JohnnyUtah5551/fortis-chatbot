@@ -1,49 +1,46 @@
 import os
-import requests  # <-- Теперь используем requests для API
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# НАСТРОЙКИ RESEND API (единственный рабочий вариант для Render)
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")  # Ваш API ключ с resend.com
-EMAIL_FROM = "notify@fortis-steel.ru"  # Отправитель (должен быть verified в Resend)
+# НАСТРОЙКИ MAILGUN API
+MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")  # Ключ из Mailgun Dashboard
+MAILGUN_DOMAIN = os.getenv("MAILGUN_DOMAIN", "sandboxXXX.mailgun.org")  # Ваш домен Mailgun
+EMAIL_FROM = f"Чат-бот Fortis <bot@{MAILGUN_DOMAIN}>"  # Отправитель
 EMAIL_TO = os.getenv("EMAIL_TO", "fmd@fortis-steel.ru")  # Получатель
 
 def send_application_email(text: str, amount: int):
-    """Отправка заявки через Resend API (работает на Render)."""
+    """Отправка заявки через Mailgun API."""
     try:
-        # Проверяем, есть ли API ключ
-        if not RESEND_API_KEY:
-            print("⚠️ RESEND_API_KEY не настроен. Письмо не будет отправлено.")
+        # Проверяем API ключ
+        if not MAILGUN_API_KEY:
+            print("⚠️ MAILGUN_API_KEY не настроен. Письмо не будет отправлено.")
             return
         
-        # Формируем письмо для Resend API
+        # Данные для Mailgun API
         email_data = {
-            "from": f"Чат-бот Fortis <{EMAIL_FROM}>",
+            "from": EMAIL_FROM,
             "to": [EMAIL_TO],
-            "subject": f"🚀 Новая заявка с сайта на {amount} руб.",
+            "subject": f"🚀 Новая заявка с сайта Fortis: {amount} руб.",
             "text": f"Поступила заявка на сумму {amount} руб.\n\nТекст заявки:\n{text}\n\n---\nОтправлено чат-ботом сайта Fortis Steel"
         }
         
-        # Отправляем через Resend API
+        # Отправляем через Mailgun API
         response = requests.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json=email_data,
-            timeout=10  # Таймаут 10 секунд
+            f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+            auth=("api", MAILGUN_API_KEY),  # Basic Auth для Mailgun
+            data=email_data,
+            timeout=10
         )
         
         # Проверяем ответ
         if response.status_code == 200:
-            print(f"✅ Email успешно отправлен на {EMAIL_TO} через Resend API")
+            print(f"✅ Email успешно отправлен на {EMAIL_TO} через Mailgun API")
         else:
-            # Логируем ошибку от API, но не ломаем бота
-            print(f"⚠️ Resend API вернул ошибку {response.status_code}: {response.text[:100]}")
+            print(f"⚠️ Mailgun API вернул ошибку {response.status_code}: {response.text[:100]}")
             
     except requests.exceptions.RequestException as e:
-        print(f"❌ Ошибка сети при отправке email: {str(e)}")
+        print(f"❌ Ошибка сети: {str(e)}")
     except Exception as e:
         print(f"❌ Неожиданная ошибка: {str(e)}")
