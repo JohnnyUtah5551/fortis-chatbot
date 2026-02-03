@@ -7,9 +7,9 @@ services:
     envVars:
       - key: REPLICATE_API_TOKEN
         sync: false
-      - key: MAILGUN_API_KEY
-        sync: false
-      - key: MAILGUN_DOMAIN
-        sync: false
+      - key: FORMSPREE_URL
+        value: https://formspree.io/f/xgozobyn
       - key: EMAIL_TO
-        sync: false
+        value: 229@fortis-steel.ru
+      - key: RENDER_EXTERNAL_URL
+        value: https://fortis-steel-bot.onrender.com
